@@ -2,11 +2,12 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 from scipy.stats import zscore
 
-df = pd.read_csv("your_dataset.csv")
+df = pd.read_csv("titanic.csv")
+
 print(df.head())
 print(df.info())
 print(df.describe())
@@ -15,24 +16,15 @@ sns.heatmap(df.isnull(), cbar=False, cmap="viridis")
 plt.title("Missing Values Heatmap")
 plt.show()
 
-df.dropna(subset=['target_column'], inplace=True)
-df['age'].fillna(df['age'].mean(), inplace=True)
-df.drop_duplicates(inplace=True)
+df.drop(columns=["Cabin"], inplace=True)
+df['Age'].fillna(df['Age'].median(), inplace=True)
+df['Embarked'].fillna(df['Embarked'].mode()[0], inplace=True)
 
-if 'date' in df.columns:
-    df['date'] = pd.to_datetime(df['date'])
+le = LabelEncoder()
+df['Sex'] = le.fit_transform(df['Sex'])
+df = pd.get_dummies(df, columns=['Embarked'])
 
-for col in df.select_dtypes(include='object').columns:
-    try:
-        df[col] = pd.to_numeric(df[col])
-    except:
-        continue
-
-if 'gender' in df.columns:
-    le = LabelEncoder()
-    df['gender'] = le.fit_transform(df['gender'])
-
-df = pd.get_dummies(df)
+df.drop(columns=['Name', 'Ticket', 'PassengerId'], inplace=True)
 
 df.hist(bins=20, figsize=(12, 8))
 plt.tight_layout()
@@ -48,18 +40,17 @@ df = df[(z_scores < 3).all(axis=1)]
 
 scaler = StandardScaler()
 numerical_cols = df.select_dtypes(include=np.number).columns
+numerical_cols = numerical_cols.drop('Survived')
 df[numerical_cols] = scaler.fit_transform(df[numerical_cols])
 
-target = 'target_column'
-X = df.drop(target, axis=1)
-y = df[target]
+X = df.drop("Survived", axis=1)
+y = df["Survived"]
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
-)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-print("Train shape:", X_train.shape)
-print("Test shape:", X_test.shape)
+print("Training shape:", X_train.shape)
+print("Testing shape:", X_test.shape)
+
 
 
 
